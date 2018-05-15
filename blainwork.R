@@ -27,7 +27,7 @@ outcomes.wins = NBATrainSLBD %>%
 outcomes.points = NBATrainSLBD %>%
   select(HFinal, VFinal)
 
-outcomes.wins = as.factor(outcomes.wins)
+outcomes.wins$Won.Home = factor(outcomes.wins$Won.Home)
 outcomes.points = as.matrix(outcomes.points)
 
 
@@ -57,7 +57,7 @@ NBATestSLBD = model.matrix(~., data = NBATestSLBD)
 cl = makeCluster(detectCores())
 registerDoParallel(cl)
 
-wins.model = train(x = x, y = factor(outcomes.wins),
+wins.model = train(x = x, y = outcomes.wins$Won.Home,
                 method = "glmnet", family = "binomial", tuneGrid = parameter.values)
 
 stopCluster(cl)
