@@ -20,9 +20,15 @@ parameter.values = expand.grid(alpha = seq(0,1, by = .1), lambda = 10^seq(3, -3,
 
 
 ### Three outcomes to check
-outcomes = NBATrainSLBD %>%
-  select(Won.Home, HFinal, VFinal)
-outcomes = as.matrix(outcomes)
+outcomes.wins = NBATrainSLBD %>%
+  select(Won.Home)
+
+outcomes.points = NBATrainSLBD %>%
+  select(HFinal, VFinal)
+
+outcomes.wins = as.matrix(outcomes.wins)
+outcomes.points = as.matrix(outcomes.points)
+
 
 ### Specify Factors
 factors = c("Home",
@@ -48,14 +54,30 @@ NBATestSLBD = model.matrix(~., data = NBATestSLBD)
 
 
 
-### Run model with parallelization
+### Run win model
 
 cl = makeCluster(detectCores())
 registerDoParallel(cl)
 
-predictions = foreach(i = 1:ncol(outcomes), .combine = cbind, .packages = "caret") %dopar% {
+predictions.wins = foreach(i = 1:ncol(outcomes.wins), .combine = cbind, .packages = "caret") %dopar% {
   
-  lasso = train(x = x, y = outcomes[ , i],
+  lasso = train(x = x, y = outcomes.wins[ , i],
+                method = "glmnet", family = binomial, tuneGrid = parameter.values)
+  lasso.predictions = predict.train(lasso, newdata = NBATestSLBD)
+  
+  
+}
+
+stopCluster(cl)
+
+### Run points model
+
+cl = makeCluster(detectCores())
+registerDoParallel(cl)
+
+predictions.points = foreach(i = 1:ncol(outcomes.points), .combine = cbind, .packages = "caret") %dopar% {
+  
+  lasso = train(x = x, y = outcomes.points[ , i],
                 method = "glmnet", tuneGrid = parameter.values)
   lasso.predictions = predict.train(lasso, newdata = NBATestSLBD)
   
@@ -64,9 +86,5 @@ predictions = foreach(i = 1:ncol(outcomes), .combine = cbind, .packages = "caret
 
 stopCluster(cl)
 
-
-### Check our predictions
-predictions = as.data.frame(predictions)
-predictions = predictions %>% rename(Won.Home = result.1, HFinal = result.2, VFinal = result.3)
 
 
