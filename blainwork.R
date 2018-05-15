@@ -63,3 +63,10 @@ predictions = foreach(i = 1:ncol(outcomes), .combine = cbind, .packages = "caret
 }
 
 stopCluster(cl)
+
+
+### Check our predictions
+predictions = as.data.frame(predictions)
+predictions = predictions %>% rename(Won.Home = result.1, HFinal = result.2, VFinal = result.3)
+
+
