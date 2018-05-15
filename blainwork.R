@@ -84,3 +84,28 @@ stopCluster(cl)
 
 
 
+### Logloss function
+logLoss = function(pred, actual){
+  
+  -1*mean(log(pred[model.matrix(~ actual + 0) - pred > 0]))
+  
+}
+
+
+### Return test data back to df
+NBATestSLBD = as.data.frame(NBATestSLBD)
+
+### Logloss of our win prediction
+logLoss(predictions.wins$`1`, NBATestSLBD$Won.Home)
+
+### Make point predictions into df
+predictions.points = as.data.frame(predictions.points)
+
+### Rename cols
+predictions.points = predictions.points %>%
+  rename(Homepoints = result.1, Visitpoints = result.2)
+
+### MSE for our predictions
+
+mean((predictions.points$Homepoints - NBATestSLBD$HFinal)^2)
+mean((predictions.points$Visitpoints - NBATestSLBD$VFinal)^2)
