@@ -3,7 +3,8 @@ library(readr)
 library(caret)
 library(doParallel)
 library(dplyr)
-
+library(glmnet)
+library(e1071)
 
 NBATrainSLBD <- read_csv("NBATrainSLBD.csv")
 NBATestSLBD <- read_csv("NBATestSLBD.csv")
@@ -26,7 +27,7 @@ outcomes.wins = NBATrainSLBD %>%
 outcomes.points = NBATrainSLBD %>%
   select(HFinal, VFinal)
 
-outcomes.wins = as.matrix(outcomes.wins)
+outcomes.wins = as.factor(outcomes.wins)
 outcomes.points = as.matrix(outcomes.points)
 
 
@@ -51,27 +52,22 @@ x = x[,-1] ### Removes intercept
 NBATestSLBD = model.matrix(~., data = NBATestSLBD)
 
 
-
-
-
 ### Run win model
 
 cl = makeCluster(detectCores())
 registerDoParallel(cl)
 
-predictions.wins = foreach(i = 1:ncol(outcomes.wins), .combine = cbind, .packages = "caret") %dopar% {
-  
-  lasso = train(x = x, y = outcomes.wins[ , i],
-                method = "glmnet", family = binomial, tuneGrid = parameter.values)
-  lasso.predictions = predict.train(lasso, newdata = NBATestSLBD)
-  
-  
-}
+wins.model = train(x = x, y = factor(outcomes.wins),
+                method = "glmnet", family = "binomial", tuneGrid = parameter.values)
 
 stopCluster(cl)
 
-### Run points model
+predictions.wins = predict.train(wins.model, newdata = NBATestSLBD, type = "prob")
 
+
+### Run points model
+### result.1 is home points
+### result.2 is visit points
 cl = makeCluster(detectCores())
 registerDoParallel(cl)
 
