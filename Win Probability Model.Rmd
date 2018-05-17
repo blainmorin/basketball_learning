@@ -1,0 +1,183 @@
+---
+title: "Win Probability Model"
+author: "Derrick Yam"
+date: "February 20, 2018"
+output: html_document
+---
+
+Steps 1-6 Completed in the Data Wrangling file
+
+##Load libraries
+```{r}
+library(dplyr)
+library(randomForest)
+library(ggplot2)
+library(readr)
+```
+
+##Load Data
+```{r}
+setwd("C:/Users/dyam/Google Drive/NBA Final Project SLBD")
+NBA <- read_csv("NBA.csv")
+NBATrain <- read_csv("NBATrain.csv")
+NBATest <- read_csv("NBATest.csv")
+```
+
+7.) Train a randomForest model with the binary outcome being won.Home
+```{r}
+##Select only the number of variables that we need to run the RF
+##Use the matches function to get all of the stats
+NBATrain <- NBATrain %>% 
+  select(Won.Home, everything())
+
+NBATrain <- NBATrain %>% 
+  select(-Home, - HFinal, -Visitor, - VFinal, -CSpreadH, -Covered, -X1, - Date, -Covered)
+
+set.seed(1)
+
+wp.rf <- randomForest(Won.Home ~ ., data = NBATrain,
+                      ntree = 750, mtry = 10, nodesize = 50,
+                      importance = TRUE, do.trace = TRUE,
+                      type = "regression")
+
+#This is saved with the 750, 10, 50
+#Save randomForest model in R
+save(wp.rf, file = "NBAWinProb.RData")
+
+#TO load the randomforest for use in another project or predict new probabilities use the following code: 
+#wp.rf = get(load("wp.rf.RData"))
+
+```
+
+
+8.) Check the variable importance
+9.) Check the MSE and variance explained
+```{r}
+print(wp.rf)
+wp.rf$importance #Show variable importance (mostly out of curiousity)
+
+```
+
+
+10.) Check the calibration of the model by splitting into 20 bins.
+```{r}
+#Apply win probability for test set
+NBATest$wp <- predict(wp.rf, NBATest)
+
+##Create a data frame for the WP accuracy plot
+plot.all <- NBATest %>% 
+  mutate(wp.cat = cut_number(wp, 20))
+
+wp.all <- plot.all %>% 
+  group_by(wp.cat) %>% 
+  summarise(estimated = mean(wp),
+            observed = mean(Won.Home))
+
+p.wpacc <- ggplot(wp.all, aes(x = estimated, y = observed))
+
+wpacc <- p.wpacc + 
+  geom_point(size = 2.5) + 
+  geom_abline(intercept = 0, slope = 1) + 
+  scale_x_continuous(labels = scales::percent, "Estimated win rate") + 
+  scale_y_continuous(labels = scales::percent, "Observed win rate") + 
+  scale_colour_manual(values = c("black", "red"),
+                                  name  ="Win Probability Model") +
+  scale_shape_manual(values = c(19, 3), name  ="Win Probability Model") + 
+  ylab("Proportion of Games Won") + 
+  ggtitle("Accuracy of the win probability models") + 
+  theme(plot.title = element_text(hjust = 0.5, size = rel(1.2)),
+        legend.position = c(.85, .15),
+        axis.title.y = element_text(size = rel(1.2)),
+        axis.title.x = element_text(size = rel(1.2)))
+wpacc
+
+```
+
+##We want to compare this to how the spread performs on its own.
+
+- Our model is definitely outperforming the spread.
+
+##Let's check our performance without the spread variable.
+
+- Either with or without the spread is pretty good. We will use with.
+
+
+##11.) If the calibration is correct retrain the model on all of the data.
+
+- Do not retrain on all of the data it overfits really badly.
+
+##Try a dimension reduced model
+
+```{r}
+setwd("C:/Users/dyam/Dropbox (Brown)/NBA Win Probability/Previous Results 20072018")
+NBA <- read_csv("NBA.csv")
+NBATrain <- read_csv("NBATrain.csv")
+NBATest <- read_csv("NBATest.csv")
+```
+
+7.) Train a randomForest model with the binary outcome being won.Home
+```{r}
+##Select only the number of variables that we need to run the RF
+##Use the matches function to get all of the stats
+NBATrain <- NBATrain %>% 
+  select(Won.Home, contains("WinPCt"), contains("WinPct"), contains("OffReb"),
+         contains("DefReb"), contains("Inj"), contains("OSpreadH"), contains("eff"),
+         contains("ShootPct"), contains("Q1"), contains("Pct3"), contains("Day"),
+         contains("Turnovers"))
+
+set.seed(1)
+
+wp.rf <- randomForest(Won.Home ~ ., data = NBATrain,
+                      ntree = 750, mtry = 10, nodesize = 50,
+                      importance = TRUE, do.trace = TRUE,
+                      type = "regression")
+
+#This is saved with the 750, 10, 50
+#Save randomForest model in R
+save(wp.rf, file = "NBAwinprobreduced.RData")
+
+#TO load the randomforest for use in another project or predict new probabilities use the following code: 
+#wp.rf = get(load("NBAwinprobreduced.RData"))
+
+```
+
+```{r}
+print(wp.rf)
+wp.rf$importance #Show variable importance (mostly out of curiousity)
+
+```
+
+
+10.) Check the calibration of the model by splitting into 20 bins.
+```{r}
+#Apply win probability for test set
+NBATest$wp <- predict(wp.rf, NBATest)
+
+##Create a data frame for the WP accuracy plot
+plot.all <- NBATest %>% 
+  mutate(wp.cat = cut_number(wp, 20))
+
+wp.all <- plot.all %>% 
+  group_by(wp.cat) %>% 
+  summarise(estimated = mean(wp),
+            observed = mean(Won.Home))
+
+p.wpacc <- ggplot(wp.all, aes(x = estimated, y = observed))
+
+wpacc <- p.wpacc + 
+  geom_point(size = 2.5) + 
+  geom_abline(intercept = 0, slope = 1) + 
+  scale_x_continuous(labels = scales::percent, "Estimated win rate") + 
+  scale_y_continuous(labels = scales::percent, "Observed win rate") + 
+  scale_colour_manual(values = c("black", "red"),
+                                  name  ="Win Probability Model") +
+  scale_shape_manual(values = c(19, 3), name  ="Win Probability Model") + 
+  ylab("Proportion of Games Won") + 
+  ggtitle("Accuracy of the win probability models") + 
+  theme(plot.title = element_text(hjust = 0.5, size = rel(1.2)),
+        legend.position = c(.85, .15),
+        axis.title.y = element_text(size = rel(1.2)),
+        axis.title.x = element_text(size = rel(1.2)))
+wpacc
+
+```
