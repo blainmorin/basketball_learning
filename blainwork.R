@@ -109,3 +109,16 @@ predictions.points = predictions.points %>%
 
 mean((predictions.points$Homepoints - NBATestSLBD$HFinal)^2)
 mean((predictions.points$Visitpoints - NBATestSLBD$VFinal)^2)
+
+### Home points model
+
+cl = makeCluster(detectCores())
+registerDoParallel(cl)
+
+home.point.elastic = train(x = x, y = outcomes.points[, 1],
+              method = "glmnet", tuneGrid = parameter.values)
+
+visit.point.elastic = train(x = x, y = outcomes.points[, 2],
+                           method = "glmnet", tuneGrid = parameter.values)
+
+stopCluster()
