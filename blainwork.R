@@ -45,7 +45,7 @@ x = NBATrainSLBD %>%
   select(-X1, -Date, -HFinal, -VFinal, -Won.Home, -GID, -CSpreadH, -Covered)
 
 ### Change x to model matrix
-x = model.matrix(~ ., data = x)
+x = model.matrix(~ . -1, data = x)
 x = x[,-1] ### Removes intercept
 
 ### Change test data to model matrix
@@ -121,4 +121,10 @@ home.point.elastic = train(x = x, y = outcomes.points[, 1],
 visit.point.elastic = train(x = x, y = outcomes.points[, 2],
                            method = "glmnet", tuneGrid = parameter.values)
 
-stopCluster()
+
+
+stopCluster(cl)
+
+save(wins.model, file = "wins.model.elastic.Rdata")
+save(home.point.elastic, file = "home.point.elastic.Rdata")
+save(visit.point.elastic, file = "visit.point.elastic.Rdada")
