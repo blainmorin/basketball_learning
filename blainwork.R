@@ -45,7 +45,7 @@ x = NBATrainSLBD %>%
   select(-X1, -Date, -HFinal, -VFinal, -Won.Home, -GID, -CSpreadH, -Covered)
 
 ### Change x to model matrix
-x = model.matrix(~ ., data = x)
+x = model.matrix(~ . -1, data = x)
 x = x[,-1] ### Removes intercept
 
 ### Change test data to model matrix
