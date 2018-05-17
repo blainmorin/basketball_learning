@@ -42,7 +42,7 @@ NBATestSLBD[factors] = as.data.frame(lapply(NBATestSLBD[factors], factor))
 
 ### Input variables
 x = NBATrainSLBD %>%
-  select(-X1, -Date, -HFinal, -VFinal, -Won.Home, -GID, -CSpreadH)
+  select(-X1, -Date, -HFinal, -VFinal, -Won.Home, -GID, -CSpreadH, -Covered)
 
 ### Change x to model matrix
 x = model.matrix(~ ., data = x)
