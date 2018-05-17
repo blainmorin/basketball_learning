@@ -118,6 +118,8 @@ registerDoParallel(cl)
 home.point.elastic = train(x = x, y = outcomes.points[, 1],
               method = "glmnet", tuneGrid = parameter.values)
 
+
+### Visit Points model
 visit.point.elastic = train(x = x, y = outcomes.points[, 2],
                            method = "glmnet", tuneGrid = parameter.values)
 
